@@ -35,3 +35,8 @@
 7. feature cross
 8. string -> timestamp
 
+### Submission:
+
+- v1: 12.91779
+
+  Label encoding + get_dummies, model: linear Regression 
