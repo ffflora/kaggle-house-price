@@ -1,4 +1,4 @@
-### Before starting the project:
+## Before starting the project:
 
 1. dataset: What kind of problem is this? 
 
@@ -12,7 +12,7 @@
 
 
 
-### Data Cleaning:
+## Data Cleaning:
 
 1. Missing value:  use mean, max, min to replace NAN
 
@@ -35,7 +35,7 @@
 7. feature cross
 8. string -> timestamp
 
-### Feature Engineering
+## Feature Engineering
 
 - 不属于**同一量纲**：特征的规格不一样，不能放在一起比较。 
 
@@ -117,9 +117,144 @@
 
   
 
-  
 
-### Submission:
+## Ensemble Learning
+
+- Bagging
+  - Random Forest
+
+- Boosting
+  - AdaBoost
+  - GBDT
+  - XGBoost
+  - LightGBM
+  - CatBoost
+
+- Stacking
+
+- Blending
+
+```python
+model1 = tree.DecisionTreeClassifier()
+model2 = KNeighborsClassifier()
+model3 = LogisticRegression()
+
+model1.fit(x_train, y_train)
+model2.fit(x_train, y_train)
+model3.fit(x_train, y_train)
+```
+
+
+
+#### Maximum Voting method 最大投票法
+
+通常用于分类问题，使用多种模型预测每个数据，每个模型的预测都被视为一次投票。大多数模型得到的预测被用于最终预测结果。
+
+```python
+pred1 = model1.predict(x_test)
+pred2 = model2.predict(x_test)
+pred3 = model3.predict(x_test)
+
+final = np.array([])
+for i in range(0,len(x_test)):
+    final = np.append(final, mode([pred1[i],pred2[i],pred3[i]]))
+```
+
+
+
+#### Average method 平均法
+
+类似于最大投票法，对每个数据多次预测进行平均。平均法可用于在回归问题中进行预测或在计算分类问题的概率时使用。
+
+```python
+pred1 = model1.predict_proba(x_test)
+pred2 = model2.predict_proba(x_test)
+pred3 = model3.predict_proba(x_test)
+
+final = (pred1 + pred2 + pred3)/3
+```
+
+
+
+#### Weighted average method 加权平均法
+
+```python
+pred1 = model1.predict_proba(x_test)
+pred2 = model2.predict_proba(x_test)
+pred3 = model3.predict_proba(x_test)
+
+final = (pred1 *0.3 + pred2*0.4 + pred3*0.3)/(0.3 + 0.4 + 0.3)
+```
+
+
+
+### 高级集成技术
+
+1. 模型的堆叠 stacking
+2. 模型的融合 blending
+
+#### stacking: 
+
+1. divide training set into 10 pieces
+2. fit one of the weak model on 9 of them, and predict the 10th
+3. repeat (predict) it one every piece of data 
+4. fit the whole data set
+5. predict the test set
+6. repeat the 2-4th step with other weak models 
+7. the prediction of the training set are considered as the feature of the new model
+
+```python
+# n-fold valifation 
+# 此函数返回每个模型对训练集和测试集的预测
+
+def stacking(model,train,y,test,n_fold):
+	folds = StratifiedKFold(n_splits = n_fold,random_state = 1)
+    test_pred = np.empty((test.shape[0],1),float)
+    train_pred = np.empty((0,1),float)
+    for train_indx,val_indx in folds.split(train,y.values):
+        x_train,x_val = train.iloc[train_indx],train.iloc[val_indx]
+        y_train,y_val = y.iloc[train_indx],y.iloc[val_indx]
+        
+        model.fit(X=x_train,y=y_train)
+        train_pred = np.append(train_pred,model.predict(x_val)) # using 1/n of the training set to get the 'input' of the next layer
+        test_pred = np.append(test_pred,model.predict(test)) # 得到的是这个 test set 的新特征
+  	return test_pred.reshape(-1,1),train_pred
+    
+```
+
+现在创建两个基本模型：Decision Tree and KNN
+
+```python
+model1= tree.DecisionTreeClassifier(random_state = 1)
+
+test_pred1, train_pred1 = Stacking(model = model1,n_fold = 10, train= x_train, test + x_trest, y= y_train)
+train_pred1 = pd.DataFrame(train_pred1)
+test_pred1 = pd.DataFrame(test_pred1)
+
+model2= KNeighborsClassifier()
+
+test_pred2, train_pred2 = Stacking(model = model2,n_fold = 10, train= x_train, test = x_trest, y= y_train)
+train_pred2 = pd.DataFrame(train_pred2)
+test_pred2 = pd.DataFrame(test_pred2)
+
+```
+
+创建第三个模型，逻辑回归，在 决策树和 KNN 的预测之上。
+
+```python
+df = pd.concat([train_pred1, train_pred2],axis = 1)
+df_test = pd.concat([test_pred1,test_pred2],axis = 1)
+
+model = LogisticRegression(random_state = 1)
+model.fit(df,y_train)
+model.score(df_score,y_test)
+```
+
+Decision Tree and KNN 在第0层，LR 在第一层。
+
+
+
+## Submission:
 
 - v1: 12.91779
 
@@ -128,3 +263,7 @@
 - v2: 0.21173
 
   Feature Engineering
+
+- v3: 0.12563
+
+  model ensemble
