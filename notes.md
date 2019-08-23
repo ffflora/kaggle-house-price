@@ -267,3 +267,7 @@ Decision Tree and KNN 在第0层，LR 在第一层。
 - v3: 0.12563
 
   model ensemble
+  
+- v4: 0.11938
+
+  hyperparameter tuning, model ensemble, model stacking.
